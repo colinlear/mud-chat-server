@@ -1,9 +1,12 @@
+import dotenv from "dotenv";
 import express from "express";
 import expressWs from "express-ws";
 
 import { ConnectionSession } from "./session";
 import { SessionCache } from "./sessioncache";
 import { AncientAnguish } from "./muds";
+
+dotenv.config();
 
 const expressApp = express();
 const app = expressWs(expressApp).app;
@@ -83,4 +86,6 @@ app.ws("/", function (ws, req) {
   console.log("socket", req.ip);
 });
 
-app.listen(port);
+app.listen(port, () => {
+  console.info("Server Running....");
+});

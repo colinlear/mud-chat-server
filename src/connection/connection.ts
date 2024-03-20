@@ -51,10 +51,6 @@ export abstract class Connection {
     protected readonly onStatusChange: (status: ConnectionStatus) => void,
     protected reconnect = true
   ) {
-    if (!existsSync(resolve(__dirname, "logs"))) {
-      mkdirSync(resolve(__dirname, "logs"));
-    }
-
     // this.lines
     //   .pipe(
     //     new Transform({

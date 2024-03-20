@@ -1,11 +1,7 @@
 import { Transform } from "stream";
 import WebSocket from "ws";
 
-import {
-  Connection,
-  ConnectionCredentials,
-  ConnectionHost,
-} from "./connection/connection";
+import { Connection, ConnectionCredentials } from "./connection/connection";
 import { MemoryTellCache, TellCache } from "./tellcache";
 import {
   PushNotificationApi,
@@ -14,6 +10,7 @@ import {
 import { AncientAnguishConnection } from "./connection/ancient-anguish";
 
 export interface TellMessage {
+  id: string;
   timestamp: number;
   message: string;
 }
@@ -40,17 +37,34 @@ export class ConnectionSession {
     this.connection.tells.pipe(
       new Transform({
         objectMode: true,
-        transform: (chunk: TellMessage, _, callback) => {
-          this.cache.addTell(chunk);
+        transform: async (chunk: Omit<TellMessage, "id">, _, callback) => {
+          const pushTokens = [];
+          const tell = await this.cache.addTell(chunk);
           for (const token of Object.keys(this.sockets)) {
             const ws = this.sockets[token];
             if (ws != null) {
-              ws.send(JSON.stringify(chunk));
+              try {
+                ws.send(JSON.stringify(tell), (err) => {
+                  if (err) {
+                    pushTokens.push(token);
+                  }
+                });
+              } catch (e) {
+                pushTokens.push(token);
+              }
+              pushTokens.push(token);
             } else {
-              this.pushNotifier.sendPush(token, {
-                latest: chunk.timestamp,
-              });
+              pushTokens.push(token);
             }
+          }
+          const realTokens = pushTokens.filter((a) => !a.startsWith("nopush"));
+          if (realTokens.length > 0) {
+            this.pushNotifier.sendPush(
+              realTokens,
+              tell.id.toString(),
+              tell.message,
+              tell.timestamp.toString()
+            );
           }
           callback();
         },

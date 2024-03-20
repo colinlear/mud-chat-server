@@ -1,13 +1,14 @@
+import { AncientAnguishConnection } from "./connection/ancient-anguish";
 import { Connection } from "./connection/connection";
 import { AncientAnguish } from "./muds";
 
 (async () => {
-  const conn = new Connection(
-    AncientAnguish,
+  const conn = new AncientAnguishConnection(
     {
       username: "deadmeat",
       password: "bumpkin",
     },
+    () => {},
     false
   );
   conn.tells.pipe(process.stdout);
